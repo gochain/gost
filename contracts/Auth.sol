@@ -2,9 +2,19 @@ pragma solidity ^0.5.8;
 
 import "./AddressSet.sol";
 
+interface IAuth {
+    //TODO doc
+    function isVoter(address) external view returns (bool);
+    function votersLenth() external view returns (uint);
+    function getVoter(uint) external view returns (address);
+    function isSigner(address) external view returns (bool);
+    function signersLenth() external view returns (uint);
+    function getSigner(uint) external view returns (address);
+}
+
 // Auth manages sets of addresses with voting and signing authorization, intended to mirror
 // the state of GoChain.
-contract Auth {
+contract Auth is IAuth {
     AddressSet.Set voters;
     AddressSet.Set signers;
     struct Vote{
@@ -12,7 +22,12 @@ contract Auth {
         bool voter; // or signer
         bool add; // or remove
     }
-    //TODO need to establish a canonical order to update, since we only vote on one thing at a time...
+
+    // Votes must be cast one at a time and in this priority order:
+    //  1. Remove voters
+    //  2. Add voters
+    //  3. Remove signers
+    //  4. Add signers
     mapping(address=>Vote) public votes;
     mapping(address=>mapping(bool=>mapping(bool=>uint))) public count;
 
@@ -35,6 +50,25 @@ contract Auth {
             "Sender not a signer"
         );
         _;
+    }
+
+    function isVoter(address voter) public view returns (bool) {
+        return voters.map[voter] != 0;
+    }
+    function votersLenth() public view returns (uint) {
+        return voters.list.length;
+    }
+    function getVoter(uint i) public view returns (address) {
+        return voters.list[i];
+    }
+    function isSigner(address voter) public view returns (bool) {
+        return signers.map[voter] != 0;
+    }
+    function signersLenth() public view returns (uint) {
+        return signers.list.length;
+    }
+    function getSigner(uint i) public view returns (address) {
+        return signers.list[i];
     }
 
     // Cast a vote to update the signer or voter set. Overwrites any previous pending vote.

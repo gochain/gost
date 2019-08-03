@@ -15,20 +15,4 @@ contract AuthMock is Auth {
     function testOnlySigners() public view onlySigners returns (bool) {
         return true;
     }
-
-    function signersLength() public view returns (uint) {
-        return signers.list.length;
-    }
-
-    function getSigner(uint i) public view returns (address) {
-        return signers.list[i];
-    }
-
-    function votersLength() public view returns (uint) {
-        return voters.list.length;
-    }
-
-    function getVoter(uint i) public view returns (address) {
-        return voters.list[i];
-    }
 }
