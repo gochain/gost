@@ -2,34 +2,6 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "signersLenth",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
-    "name": "votersLenth",
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "payable": false,
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [],
     "name": "_confirmedGas",
     "outputs": [
       {
@@ -85,6 +57,20 @@
   {
     "constant": true,
     "inputs": [],
+    "name": "signersLength",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
     "name": "confirmGas",
     "outputs": [
       {
@@ -122,6 +108,20 @@
     "constant": true,
     "inputs": [],
     "name": "totalConfirmGas",
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "payable": false,
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "votersLength",
     "outputs": [
       {
         "name": "",

@@ -13,4 +13,5 @@ generate:
 	abigen --lang go --abi ./out/Confirmations.abi --bin ./out/Confirmations.bin --pkg gost --type Confirmations --out confirmations.go
 
 test:
+	go test ./...
 	truffle test
