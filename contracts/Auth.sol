@@ -5,10 +5,10 @@ import "./AddressSet.sol";
 interface IAuth {
     //TODO doc
     function isVoter(address) external view returns (bool);
-    function votersLenth() external view returns (uint);
+    function votersLength() external view returns (uint);
     function getVoter(uint) external view returns (address);
     function isSigner(address) external view returns (bool);
-    function signersLenth() external view returns (uint);
+    function signersLength() external view returns (uint);
     function getSigner(uint) external view returns (address);
 }
 
@@ -55,7 +55,7 @@ contract Auth is IAuth {
     function isVoter(address voter) public view returns (bool) {
         return voters.map[voter] != 0;
     }
-    function votersLenth() public view returns (uint) {
+    function votersLength() public view returns (uint) {
         return voters.list.length;
     }
     function getVoter(uint i) public view returns (address) {
@@ -64,7 +64,7 @@ contract Auth is IAuth {
     function isSigner(address voter) public view returns (bool) {
         return signers.map[voter] != 0;
     }
-    function signersLenth() public view returns (uint) {
+    function signersLength() public view returns (uint) {
         return signers.list.length;
     }
     function getSigner(uint i) public view returns (address) {
