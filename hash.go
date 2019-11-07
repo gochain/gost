@@ -1,9 +1,9 @@
 package gost
 
 import (
-	"github.com/gochain-io/gochain/v3/common"
-	"github.com/gochain-io/gochain/v3/core/types"
-	"github.com/gochain-io/gochain/v3/crypto"
+	"github.com/gochain/gochain/v3/common"
+	"github.com/gochain/gochain/v3/core/types"
+	"github.com/gochain/gochain/v3/crypto"
 )
 
 // HashLog returns keccak256(abi.encode(source, topics..., data)).
