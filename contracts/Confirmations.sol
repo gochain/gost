@@ -57,7 +57,7 @@ contract Confirmations is Auth, IConfirmations {
     // Events pending confirmation.
     mapping(uint=>mapping(uint=>mapping(bytes32=>Pending))) pending;
     // Iterable list of keys from pending.
-    Key[] pendingList;
+    Key[] public pendingList;
     // Index + 1 from pendingList.
     mapping(uint=>mapping(uint=>mapping(bytes32=>uint))) pendingIdx;
 
@@ -78,6 +78,21 @@ contract Confirmations is Auth, IConfirmations {
         pendingIdx[blockNum][logIndex][eventHash] = l;
 
         emit ConfirmationRequested(blockNum, logIndex, eventHash);
+    }
+
+    // Returns true if the request is pending and the calling signer has not yet confirmed.
+    function confirmAllowed(uint blockNum, uint logIndex, bytes32 eventHash) onlySigners public view returns (bool) {
+        if (status[blockNum][logIndex][eventHash] != Status.Pending) {
+            return false;
+        }
+        Pending storage p = pending[blockNum][logIndex][eventHash];
+        if (p.validVotes.map[msg.sender] > 0) {
+            return false;
+        }
+        if (p.invalidVotes.map[msg.sender] > 0) {
+            return false;
+        }
+        return true;
     }
 
     // Vote to confirm an event. Only callable by GoChain signers. Status must be Pending. Gas price must match requested.
@@ -175,5 +190,9 @@ contract Confirmations is Auth, IConfirmations {
                 i++;
             }
         }
+    }
+
+    function pendingListLength() public view returns (uint) {
+        return pendingList.length;
     }
 }
