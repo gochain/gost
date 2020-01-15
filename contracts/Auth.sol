@@ -73,18 +73,43 @@ contract Auth is IAuth {
 
     // Cast a vote to update the signer or voter set. Overwrites any previous pending vote.
     // Passing an empty address will remove an existing vote.
+    //TODO more docs
     function setVote(address addr, bool voter, bool add) public onlyVoters {
         Vote storage vote = votes[msg.sender];
         if (vote.addr != address(0)) {
-            count[vote.addr][vote.voter][vote.add]--;
-            if (addr == address(0)) {
-                // Delete existing.
-                delete votes[msg.sender];
+            if (vote.addr == addr && vote.voter == voter && vote.add == add) {
                 return;
             }
-        } else if (addr == address(0)) {
-            // No existing vote to delete.
+            // Delete existing.
+            count[vote.addr][vote.voter][vote.add]--;
+            delete votes[msg.sender];
+        }
+        if (addr == address(0)) {
             return;
+        }
+
+        //TODO test
+        // Ignore irrelevant votes.
+        if (voter) {
+            if (add) {
+                if (isVoter(addr)) {
+                    return;
+                }
+            } else {
+                if (!isVoter(addr)) {
+                    return;
+                }
+            }
+        } else {
+            if (add) {
+                if (isSigner(addr)) {
+                    return;
+                }
+            } else {
+                if (!isSigner(addr)) {
+                    return;
+                }
+            }
         }
 
         votes[msg.sender] = Vote(addr, voter, add);
