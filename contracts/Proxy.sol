@@ -2,7 +2,6 @@ pragma solidity ^0.5.8;
 
 import "../lib/oz/contracts/token/ERC20/ERC20Detailed.sol";
 import "../lib/oz/contracts/token/ERC20/ERC20Burnable.sol";
-import "../lib/oz/contracts/token/ERC20/ERC20Mintable.sol";
 import "./Transfers.sol";
 
 // A Proxy contract is an ERC20 which also manages token transfers on a proxy network.

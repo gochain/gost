@@ -69,12 +69,11 @@ contract("Confirmations", async accounts => {
         assert.equal(s, 1, "Status not pending");
 
         // Verify other signer is allowed while 0 is not.
-        let a, reqPrice = await confs.shouldConfirm(1, 1, hash);
-        assert.equal(a, false, "Confirm still allowed");
-        assert.equal(reqPrice, defaultPrice, "Request price mismatch");
-        a, reqPrice = await confs.shouldConfirm(1, 1, hash, {from: accounts[1]});
-        assert.equal(a, true, "Confirm not allowed");
-        assert.equal(reqPrice, defaultPrice, "Request price mismatch");
+        let should = await confs.shouldConfirm(1, 1, hash);
+        assert.equal(should[0], false, "Confirm still allowed");
+        should = await confs.shouldConfirm(1, 1, hash, {from: accounts[1]});
+        assert.equal(should[0], true, "Confirm not allowed");
+        assert.equal(should[1].toString(), defaultPrice.toString(), "Request price mismatch");
 
         // Remove other signer.
         let tx = await confs.setVote(accounts[1], false, false);
