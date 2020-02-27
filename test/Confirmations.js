@@ -68,6 +68,14 @@ contract("Confirmations", async accounts => {
         s = await confs.status(2, 2, hash);
         assert.equal(s, 1, "Status not pending");
 
+        // Verify other signer is allowed while 0 is not.
+        let a, reqPrice = await confs.shouldConfirm(1, 1, hash);
+        assert.equal(a, false, "Confirm still allowed");
+        assert.equal(reqPrice, defaultPrice, "Request price mismatch");
+        a, reqPrice = await confs.shouldConfirm(1, 1, hash, {from: accounts[1]});
+        assert.equal(a, true, "Confirm not allowed");
+        assert.equal(reqPrice, defaultPrice, "Request price mismatch");
+
         // Remove other signer.
         let tx = await confs.setVote(accounts[1], false, false);
 
@@ -83,7 +91,6 @@ contract("Confirmations", async accounts => {
         s = await confs.status(2, 2, hash);
         assert.equal(s, 2, "Status not Invalid");
     })
-
 
     it("confirmation gas used", async () => {
         // Need 50 signging accounts.

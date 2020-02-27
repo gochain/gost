@@ -31,36 +31,59 @@ contract("AuthMock", async accounts => {
     })
 
     it("add and remove signers and voters", async() => {
-        // Vote to add as signer.
+        // Add 2nd signer.
         await auth.setVote(accounts[1], false, true);
         assert.equal(await auth.votersLength(), 1, "Expected 1 voter");
         assert.equal(await auth.signersLength(), 2, "Expected 2 signers");
 
-        // Vote to add as voter.
+        // Allow 2nd signer to vote.
         await auth.setVote(accounts[1], true, true);
         assert.equal(await auth.signersLength(), 2, "Expected 2 signers");
         assert.equal(await auth.votersLength(), 2, "Expected 2 voters");
 
-        // Vote to remove signer.
+        // Add 3rd signer (requires consensus).
+        await auth.setVote(accounts[2], false, true);
+        await auth.setVote(accounts[2], false, true, {from: accounts[1]});
+        assert.equal(await auth.signersLength(), 3, "Expected 3 signers");
+        assert.equal(await auth.votersLength(), 2, "Expected 2 voters");
+
+        // Remove 3rd signer.
+        await auth.setVote(accounts[2], false, false);
+        let tx = await auth.setVote(accounts[2], false, false, {from: accounts[1]});
+        truffleAssert.eventEmitted(tx, 'SignerRemoved', (ev) => {
+            return ev.signer === accounts[2];
+        });
+        assert.equal(await auth.signersLength(), 2, "Expected 2 signers");
+        assert.equal(await auth.votersLength(), 2, "Expected 2 voters");
+
+        // Remove 2nd signer (self-vote).
         await auth.setVote(accounts[1], false, false);
-        let tx = await auth.setVote(accounts[1], false, false, {from: accounts[1]});
+        tx = await auth.setVote(accounts[1], false, false, {from: accounts[1]});
         truffleAssert.eventEmitted(tx, 'SignerRemoved', (ev) => {
             return ev.signer === accounts[1];
         });
         assert.equal(await auth.signersLength(), 1, "Expected 1 signer");
         assert.equal(await auth.votersLength(), 1, "Expected 1 voter");
 
-        // Add back.
+        // Add back as voter.
         await auth.setVote(accounts[1], true, true);
         assert.equal(await auth.signersLength(), 2, "Expected 2 signers");
         assert.equal(await auth.votersLength(), 2, "Expected 2 voters");
 
-        // Remove voting.
+        // Revoke 2nd signer's voting permissions.
         await auth.setVote(accounts[1], true, false);
         tx = await auth.setVote(accounts[1], true, false, {from: accounts[1]});
         assert.equal(await auth.signersLength(), 2, "Expected 2 signers");
         assert.equal(await auth.votersLength(), 1, "Expected 1 voter");
         truffleAssert.eventNotEmitted(tx, 'SignerRemoved');
+
+        // Remove 2nd signer.
+        tx = await auth.setVote(accounts[1], false, false);
+        truffleAssert.eventEmitted(tx, 'SignerRemoved', (ev) => {
+            return ev.signer === accounts[1];
+        });
+        assert.equal(await auth.signersLength(), 1, "Expected 1 signer");
+        assert.equal(await auth.votersLength(), 1, "Expected 1 voter");
     })
 
     it("post-process on voter remove", async () => {

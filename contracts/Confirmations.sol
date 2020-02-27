@@ -81,18 +81,18 @@ contract Confirmations is Auth, IConfirmations {
     }
 
     // Returns true if the request is pending and the calling signer has not yet confirmed.
-    function confirmAllowed(uint blockNum, uint logIndex, bytes32 eventHash) onlySigners public view returns (bool) {
+    function shouldConfirm(uint blockNum, uint logIndex, bytes32 eventHash) onlySigners public view returns (bool, uint) {
         if (status[blockNum][logIndex][eventHash] != Status.Pending) {
-            return false;
+            return (false, 0);
         }
         Pending storage p = pending[blockNum][logIndex][eventHash];
         if (p.validVotes.map[msg.sender] > 0) {
-            return false;
+            return (false, 0);
         }
         if (p.invalidVotes.map[msg.sender] > 0) {
-            return false;
+            return (false, 0);
         }
-        return true;
+        return (true, p.gasPrice);
     }
 
     // Vote to confirm an event. Only callable by GoChain signers. Status must be Pending. Gas price must match requested.
