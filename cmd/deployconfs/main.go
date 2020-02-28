@@ -29,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	if !common.IsHexAddress(*voter) {
-		log.Fatalf("Invalid voter hex address: %s", voter)
+		log.Fatalf("Invalid voter hex address: %s", *voter)
 	}
 	key, ok := os.LookupEnv(KEY_ENV)
 	if !ok {

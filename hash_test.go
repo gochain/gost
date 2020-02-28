@@ -17,9 +17,9 @@ var (
 )
 
 func init() {
-	hashTy, _ = abi.NewType("bytes32", nil)
-	addressTy, _ = abi.NewType("address", nil)
-	uint256Ty, _ = abi.NewType("uint256", nil)
+	hashTy, _ = abi.NewType("bytes32", "", nil)
+	addressTy, _ = abi.NewType("address", "", nil)
+	uint256Ty, _ = abi.NewType("uint256", "", nil)
 }
 
 var (
