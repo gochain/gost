@@ -23,7 +23,7 @@ jobs:
           paths:
             - node_modules
           key: v1-dependencies-{{ checksum "package-lock.json" }}
-      - run: sudo npm install -g truffle
+      - run: sudo npm install -g truffle@5.0.x
       - run: npm install --save-dev cids chai truffle-assertions
       - run: truffle test
 

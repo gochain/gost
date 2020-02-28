@@ -92,7 +92,7 @@ contract("Confirmations", async accounts => {
     })
 
     it("confirmation gas used", async () => {
-        // Need 50 signging accounts.
+        // Need 50 signing accounts.
         let seeded = [accounts[0]];
         for (let i=0;i<49;i++) {
             let s = await web3.eth.personal.newAccount("password");

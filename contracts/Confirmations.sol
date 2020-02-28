@@ -102,7 +102,7 @@ contract Confirmations is Auth, IConfirmations {
             return;
         }
         Pending storage p = pending[blockNum][logIndex][eventHash];
-        require(tx.gasprice == p.gasPrice, "Gas price doesn't match requested.");
+        require(tx.gasprice >= p.gasPrice, "Gas price too low.");
         AddressSet.Set storage votes = p.validVotes;
         if (valid) {
             if (p.invalidVotes.map[msg.sender] > 0) {
