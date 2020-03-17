@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -49,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to deploy contract: %v", err)
 	}
-	log.Printf("Contract deployed to: %s\n", addr.Hex())
+	fmt.Println("Contract deployed to:", addr.Hex())
 }
 
 func deployConfirmations(client *goclient.Client, key *ecdsa.PrivateKey, voter common.Address) (common.Address, *gost.Confirmations, error) {
@@ -59,8 +60,8 @@ func deployConfirmations(client *goclient.Client, key *ecdsa.PrivateKey, voter c
 	if err != nil {
 		return common.Address{}, nil, err
 	}
-	log.Printf("Waiting for tx: %s\n", tx.Hash())
-	log.Printf("Expecting address: %s\n", expAddr.Hex())
+	fmt.Println("Waiting for tx:", tx.Hash().Hex())
+	fmt.Println("Expecting address:", expAddr.Hex())
 	addr, err := bind.WaitDeployed(context.Background(), client, tx)
 	if err != nil {
 		return common.Address{}, nil, err

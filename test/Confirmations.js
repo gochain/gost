@@ -15,7 +15,7 @@ contract("Confirmations", async accounts => {
         confGas = await confs.totalConfirmGas();
     })
 
-    it("confirm", async () => {
+    it("request and confirm", async () => {
         let tx = await confs.request(1, 1, hash, {value: confGas.mul(defaultPrice), gasPrice: defaultPrice});
         truffleAssert.eventEmitted(tx, 'ConfirmationRequested', (ev) => {
             return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash;
@@ -31,25 +31,54 @@ contract("Confirmations", async accounts => {
         assert.equal(s, 3, "Status not Confirmed");
 
         // Ensure extra confirm ignored.
-        tx = await confs.confirm(1, 1, hash, true);
-        truffleAssert.eventNotEmitted(tx, 'Confirmed');
+        await truffleAssert.reverts(confs.confirm(1, 1, hash, true), "Status not Pending",
+          "Confirmed non-pending");
+    })
+
+    it("request twice and confirm", async () => {
+        let tx = await confs.request(1, 1, hash, {value: confGas.mul(defaultPrice), gasPrice: defaultPrice});
+        truffleAssert.eventEmitted(tx, 'ConfirmationRequested', (ev) => {
+            return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash;
+        });
+        let s = await confs.status(1, 1, hash);
+        assert.equal(s, 1, "Status not pending");
+
+        // Second request.
+        tx = await confs.request(1, 1, hash, {value: confGas.mul(defaultPrice), gasPrice: defaultPrice});
+        truffleAssert.eventEmitted(tx, 'ConfirmationRequested', (ev) => {
+            return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash;
+        });
+        s = await confs.status(1, 1, hash);
+        assert.equal(s, 1, "Status not pending");
+
+        // Check price and votes.
+        let ps = await confs.pendingStatus(1, 1, hash);
+        expect(ps.gasPrice).to.eql(web3.utils.toBN(2).mul(defaultPrice));
+        expect(ps.total).to.eql(web3.utils.toBN(1));
+        expect(ps.valid).to.eql(web3.utils.toBN(0));
+        expect(ps.invalid).to.eql(web3.utils.toBN(0));
+
+        // Confirm at original gas price.
+        tx = await confs.confirm(1, 1, hash, true, {gasPrice: defaultPrice});
+        truffleAssert.eventEmitted(tx, 'Confirmed', (ev) => {
+            return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash && ev.valid == true;
+        });
+        s = await confs.status(1, 1, hash);
+        assert.equal(s, 3, "Status not Confirmed");
+
+        assert.equal(await web3.eth.getBalance(confs.address), 0, "Fee should payout completely");
     })
 
     it("confirm requires pending", async () => {
-        let tx = await confs.confirm(1, 1, hash, true);
-        truffleAssert.eventNotEmitted(tx, 'Confirmed');
-        let s = await confs.status(1, 1, hash);
-        assert.equal(s, 0, "Status not None");
+        await truffleAssert.reverts(confs.confirm(1, 1, hash, true),"Status not Pending",
+          "should fail since not pending");
     })
 
     it("confirm requires signer", async () => {
         await confs.request(1, 1, hash, {value: confGas.mul(defaultPrice), gasPrice: defaultPrice});
-        try {
-            await confs.confirm(1, 1, hash, true, {from: accounts[1]});
-            fail("Non-signer confirmed");
-        } catch(error) {
-            assert(error.toString().includes("Sender not a signer"), "Unexpected error:" + error);
-        }
+        await truffleAssert.reverts(confs.confirm(1, 1, hash, true, {from: accounts[1]}),
+          "Sender not a signer",
+          "Non-signer confirmed");
     })
 
     it("post-process on signer remove", async () => {
@@ -145,11 +174,39 @@ contract("Confirmations", async accounts => {
         }
     })
 
-    //TODO under/overpriced claim rejected, matching accepted (and vary the price: 1, 10, 100 gwei?)
+    it("request rejects underpayment", async () => {
+        await truffleAssert.reverts(confs.request(1, 1, hash, {gasPrice: defaultPrice}),
+          "Tx value doesn't cover confirmation fee",
+          "Underpriced request");
+    })
 
-    //TODO test underpayment rejected
+    it("request refunds overpayment", async () => {
+        const fee = confGas.mul(defaultPrice);
+        const over = fee.add(web3.utils.toBN(10));
+        await confs.request(1, 1, hash, {value: over, gasPrice: defaultPrice});
+        assert.equal(await web3.eth.getBalance(confs.address), fee, "Overpayment not refunded");
+    })
 
-    //TODO test overpayment refunded
+    it("confirm ignores gas price", async () => {
+        let tx = await confs.request(1, 1, hash, {value: confGas.mul(defaultPrice), gasPrice: defaultPrice});
+        truffleAssert.eventEmitted(tx, 'ConfirmationRequested', (ev) => {
+            return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash;
+        });
 
-    //TODO test more complex events than just GOSTTransfer
+        const x10th = defaultPrice.divRound(web3.utils.toBN(10));
+        tx = await confs.request(1, 1, hash, {value: confGas.mul(x10th), gasPrice: x10th});
+        truffleAssert.eventEmitted(tx, 'ConfirmationRequested', (ev) => {
+            return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash;
+        });
+
+        const x10 = defaultPrice.mul(web3.utils.toBN(10));
+        tx = await confs.request(1, 1, hash, {value: confGas.mul(x10), gasPrice: x10});
+        truffleAssert.eventEmitted(tx, 'ConfirmationRequested', (ev) => {
+            return ev.blockNum == 1 && ev.logIndex == 1 && ev.eventHash == hash;
+        });
+
+        // Check price.
+        let ps = await confs.pendingStatus(1, 1, hash);
+        assert.equal(ps.gasPrice.toString(), defaultPrice.add(x10th).add(x10).toString(), "Pending price not summed");
+    })
 })

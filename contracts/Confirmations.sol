@@ -11,10 +11,14 @@ interface IConfirmations {
     // Get the status for an event.
     function status(uint blockNum, uint logIndex, bytes32 eventHash) external view returns (Status);
 
-    // Request confirmation of an event. Status must be None.
-    // Transitions status to Pending and emits a ConfirmationRequested event.
+    // Request confirmation of an event. Status must be None or Pending.
+    // Emits a ConfirmationRequested event and results in a Pending status.
     // Must include payment of 2,500,000 gas @this tx's gas price to cover signers' confirmation gas fees.
     function request(uint blockNum, uint logIndex, bytes32 eventHash) external payable;
+
+    // Check the status of a pending request.
+    // Returns total signer count, valid/invalid vote counts, and the gasPrice incentive.
+    function pendingStatus(uint blockNum, uint logIndex, bytes32 eventHash) external view returns (uint gasPrice, uint total, uint valid, uint invalid);
 
     // Emitted when confirmation of an event is requested.
     event ConfirmationRequested(uint indexed blockNum, uint indexed logIndex, bytes32 eventHash);
@@ -64,20 +68,33 @@ contract Confirmations is Auth, IConfirmations {
     constructor(address voter) Auth(voter) public {}
 
     function request(uint blockNum, uint logIndex, bytes32 eventHash) public payable {
-        require(status[blockNum][logIndex][eventHash] == Status.None, "Status must be None");
+        Status s = status[blockNum][logIndex][eventHash];
+        require(s == Status.None || s == Status.Pending, "Status must be None or Pending");
 
-        status[blockNum][logIndex][eventHash] = Status.Pending;
         uint fee = totalConfirmGas * tx.gasprice;
         require(msg.value >= fee, "Tx value doesn't cover confirmation fee");
         if (msg.value > fee) {
             // Refund overpayment.
             msg.sender.transfer(msg.value - fee);
         }
-        pending[blockNum][logIndex][eventHash].gasPrice = tx.gasprice;
-        uint l = pendingList.push(Key(blockNum, logIndex, eventHash));
-        pendingIdx[blockNum][logIndex][eventHash] = l;
+
+        if (s == Status.None) {
+            status[blockNum][logIndex][eventHash] = Status.Pending;
+            uint l = pendingList.push(Key(blockNum, logIndex, eventHash));
+            pendingIdx[blockNum][logIndex][eventHash] = l;
+        }
+
+        pending[blockNum][logIndex][eventHash].gasPrice += tx.gasprice;
 
         emit ConfirmationRequested(blockNum, logIndex, eventHash);
+    }
+
+    function pendingStatus(uint blockNum, uint logIndex, bytes32 eventHash) public view returns (uint gasPrice, uint total, uint valid, uint invalid) {
+        if (status[blockNum][logIndex][eventHash] != Status.Pending) {
+            return (0, 0, 0, 0);
+        }
+        Pending storage p = pending[blockNum][logIndex][eventHash];
+        return (p.gasPrice, signers.list.length, p.validVotes.list.length, p.invalidVotes.list.length);
     }
 
     // Returns true if the request is pending and the calling signer has not yet confirmed.
@@ -98,11 +115,9 @@ contract Confirmations is Auth, IConfirmations {
     // Vote to confirm an event. Only callable by GoChain signers. Status must be Pending. Gas price must match requested.
     // If this is the final vote, emits a Confirmed event and distributes fees.
     function confirm(uint blockNum, uint logIndex, bytes32 eventHash, bool valid) onlySigners public  {
-        if (status[blockNum][logIndex][eventHash] != Status.Pending) {
-            return;
-        }
+        require(status[blockNum][logIndex][eventHash] == Status.Pending, "Status not Pending");
+
         Pending storage p = pending[blockNum][logIndex][eventHash];
-        require(tx.gasprice >= p.gasPrice, "Gas price too low.");
         AddressSet.Set storage votes = p.validVotes;
         if (valid) {
             if (p.invalidVotes.map[msg.sender] > 0) {
