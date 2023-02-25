@@ -18,5 +18,5 @@ require (
 	github.com/urfave/cli v1.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae // indirect
+	golang.org/x/sys v0.1.0 // indirect
 )
